@@ -1,0 +1,6 @@
+<launch>
+<node name="Controller" pkg="three_wheel_robot" type="Velocity_Controller_PI_Node.py" output="screen"/>
+<node name="Wheel_Speed_Controller" pkg="three_wheel_robot" type="Wheel_Speed_Controller_Node.py"  />
+<node name="KF" pkg="three_wheel_robot" type="three_wheel_KF.py"  />
+</launch>
+  
