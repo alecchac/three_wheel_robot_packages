@@ -181,7 +181,7 @@ void dataPublisher(int markno, const float& x, const float& y, const float& thet
     robot_pose.x = x;
     robot_pose.y = y;
     robot_pose.theta = theta + PI;
-    robot_pose.D2C = D2C;
+    robot_pose.D2C = D2C/320;
 
     if (markno == 0 && x  == 0 && y  == 0)
     robot_pose.isValid=false;
@@ -254,7 +254,7 @@ void imageCallback(const  sensor_msgs::CompressedImageConstPtr& msg)
             ImageX = cv_ptr->image.cols/2;
             D2Center = Markers[i].getCenter().x - ImageX;
 
-            dataPublisher(i, getX(C), getY(C),MarkAngles[i],D2Center);
+            dataPublisher(Markers[i].id, getX(C), getY(C),MarkAngles[i],D2Center);
         }
 
     }
@@ -278,6 +278,6 @@ int main(int argc, char **argv)
     sub = nh.subscribe("/raspicam_node/image/compressed", 1, imageCallback);
     imagepub = it.advertise("/camera/image_processed", 1);
     //drawpub = it.advertise("/camera/drawing", 10);
-    datapub = nh.advertise<aruco_node::measurement>("/aruco/robot_pose",1);
+    datapub = nh.advertise<aruco_node::measurement>("/aruco/robot_pose",2);
     ros::spin();
 }

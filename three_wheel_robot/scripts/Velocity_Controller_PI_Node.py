@@ -29,9 +29,38 @@ def main():
 
 	while (not rospy.is_shutdown()) :
 		#--------------------- Single ----------------------------
-		follow_angle = 0
+		#With imu angles
 		if bobInfo.x != 0:
 			if getDistance(bobWaySingle.x,bobWaySingle.y,bobInfo.x,bobInfo.y)>distance_tolerance:
+				follow_angle = pi_pose.theta
+				#updates the current goal pose and the current pose of the robot for the controller class to use
+				bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
+				#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
+				vels=bobControl.update_velocities(min_vel)
+				#publish velocities to topic cmd_vel
+				bobPubInfo.v_x = vels[0]
+				bobPubInfo.v_y = vels[1]
+				bobPubInfo.omega = vels[2]
+				pub.publish(bobPubInfo)
+			
+			else:
+				#resets Integrator sums
+				bobControl.reset_Iterms()
+				follow_angle = pi_pose.theta
+				#updates the current goal pose and the current pose of the robot for the controller class to use
+				bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
+				#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
+				vels=bobControl.update_velocities(min_vel)
+				#publish velocities to topic cmd_vel
+				bobPubInfo.v_x = 0
+				bobPubInfo.v_y = 0
+				bobPubInfo.omega = vels[2]
+				pub.publish(bobPubInfo)
+
+		''' no imu
+		if bobInfo.x != 0:
+			if getDistance(bobWaySingle.x,bobWaySingle.y,bobInfo.x,bobInfo.y)>distance_tolerance:
+				follow_angle = 0
 				#updates the current goal pose and the current pose of the robot for the controller class to use
 				bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,-pi_pose.D2C)
 				#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
@@ -43,6 +72,7 @@ def main():
 					bobPubInfo.omega = vels[2]
 				else:
 					bobPubInfo.omega = 1
+				print bobPubInfo.omega
 				pub.publish(bobPubInfo)
 			
 			else:
@@ -55,7 +85,7 @@ def main():
 				else:
 					bobPubInfo.omega = 1
 				pub.publish(bobPubInfo)
-			
+			'''
 
 
 		#------------------------------------------- Array of points-------------------
@@ -204,8 +234,6 @@ class Velocity_Controller_PI(object):
 		self.errorX=0.0
 		self.errorY=0.0
 		self.errorTheta=0.0
-		self.last_error_x=0.0
-		self.last_error_y=0.0
 		self.last_error_theta=0.0
 		
 		#integrator sums
@@ -230,7 +258,7 @@ class Velocity_Controller_PI(object):
 		delta_t=time.time()-self.last_time
 		#resets delta_t if function has not been run for a while
 		if delta_t>2:
-			delta_t=0
+			delta_t=.0001
 		
 		#Integral Contribution 
 		#Sums up the error term with the delta t to remove steady state error
@@ -240,10 +268,9 @@ class Velocity_Controller_PI(object):
 			self.IY+=self.Ki_l*self.errorY*delta_t
 		if not self.satT:
 			self.ITheta+=self.Ki_a*self.errorTheta*delta_t
+		
 
 		#set last error
-		self.last_error_x=self.errorX
-		self.last_error_y=self.errorY
 		self.last_error_theta=self.errorTheta
 
 
@@ -295,6 +322,7 @@ class Velocity_Controller_PI(object):
 		self.setX=setX
 		self.setY=setY
 		self.setTheta=setTheta
+
 		
 	def reset_Iterms(self):
 		self.IX=0.0

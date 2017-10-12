@@ -158,16 +158,18 @@ if __name__ == '__main__':
 	#measure_pose = camera_listener()
 	encoder_vels = encoder_listener()
 	pi_pose = measurment_listener()
+	IMU_info = robot_info_listener()
 
 	#init publisher and subscribers
 	#Publisher of this node (Topic, mesage) 
-	pub = rospy.Publisher('Pose_hat', robot_info, queue_size=10)
+	pub = rospy.Publisher('Pose_hat', robot_info, queue_size=1)
 	#Subscribe to Encoder
 	rospy.Subscriber('encoder_omegas',Espeeds,encoder_vels.callback)
 	#Subscribe to camera
 	#rospy.Subscriber('/ram/amcl_pose',PoseWithCovarianceStamped,measure_pose.callback)
 	#PiCameraSub
 	rospy.Subscriber('/aruco/robot_pose',measurement,pi_pose.callback)
+	rospy.Subscriber('/IMU/robot_info',robot_info,IMU_info.callback)
 	#rospy.Subscriber('',PoseWithCovarianceStamped,measure_pose.callback)
 
     # ------------------- End of ROS set up --------------------
@@ -207,7 +209,7 @@ if __name__ == '__main__':
 	#initialize Q when camera is not availible
 	Q_no_camera = [[10**15,0,0],
 		[0,10**15,0],
-		[0,0,10**15]]
+		[0,0,Q[2][2]]]
 
     # dt = 0.00006
    	t1 = time.time()
@@ -232,7 +234,7 @@ if __name__ == '__main__':
 		#----------------Get World Velocities from the encoder measurements---------------------
 		#get theta from previous kf output
 		theta = last_pkg[0][2][0]
-		print theta
+		#print theta
 		#multiply encoder omegas to get linear velocities of wheel (V=omega*r)
 		v0 = encoder_vels.e_s1 * r
 		v1 = encoder_vels.e_s2 * r
@@ -266,9 +268,16 @@ if __name__ == '__main__':
 			[measure_pose.y],
 			[measure_pose.theta_z]]
 		'''
+
 		zt = [[pi_pose.x],
 			[pi_pose.y],
-			[pi_pose.theta]]
+			[IMU_info.theta]]
+		'''
+		elif pi_pose.markernum == 416:
+			zt = [[(-pi_pose.y)+.055],
+				[pi_pose.x+.075],
+				[pi_pose.theta + (pi/2)]]
+		'''
 
 			
 		#----------------- Get the sensor Covariance -------------
