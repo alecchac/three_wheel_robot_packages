@@ -6,13 +6,13 @@ from three_wheel_robot.msg import waypoints
 from geometry_msgs.msg import PoseStamped
 from three_wheel_robot.msg import robot_info
 from aruco_node.msg import measurement
-from Master_Settings import max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,distance_tolerance,angle_tolerance,SF,min_vel
+from Master_Settings import max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,distance_tolerance,angle_tolerance,SF,min_vel,Kd_angular,max_acceleration
 
 def main():
 	#initialize node
 	rospy.init_node('Controller',anonymous=True)
 	#initialize controller
-	bobControl=Velocity_Controller_PI(max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular)
+	bobControl=Velocity_Controller_PI(max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,Kd_angular,max_acceleration)
 	#initialize listener classes
 	#bobWay=waypoint_listener()
 	bobWaySingle = pose_listener()
@@ -31,26 +31,23 @@ def main():
 		#--------------------- Single ----------------------------
 		#With imu angles
 		if bobInfo.x != 0:
+			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+math.pi
+			print "goal angle: "+str(follow_angle*(180/math.pi)) + "   "
+			#print "x: "+str(bobInfo.x) + "   "
+			#print "y: "+str(bobInfo.y)+ "   "
+			#updates the current goal pose and the current pose of the robot for the controller class to use
+			bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
+			#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
+			vels=bobControl.update_velocities(min_vel)
 			if getDistance(bobWaySingle.x,bobWaySingle.y,bobInfo.x,bobInfo.y)>distance_tolerance:
-				follow_angle = pi_pose.theta
-				#updates the current goal pose and the current pose of the robot for the controller class to use
-				bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
-				#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
-				vels=bobControl.update_velocities(min_vel)
 				#publish velocities to topic cmd_vel
 				bobPubInfo.v_x = vels[0]
 				bobPubInfo.v_y = vels[1]
 				bobPubInfo.omega = vels[2]
 				pub.publish(bobPubInfo)
-			
 			else:
 				#resets Integrator sums
 				bobControl.reset_Iterms()
-				follow_angle = pi_pose.theta
-				#updates the current goal pose and the current pose of the robot for the controller class to use
-				bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
-				#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
-				vels=bobControl.update_velocities(min_vel)
 				#publish velocities to topic cmd_vel
 				bobPubInfo.v_x = 0
 				bobPubInfo.v_y = 0
@@ -120,6 +117,7 @@ def main():
 			print 'done'
 			break
 			"""
+	time.sleep(1/30)
 	rospy.spin()
 
 def getDistance(destX,destY,curX,curY):
@@ -208,7 +206,7 @@ class Velocity_Controller_PI(object):
 	Dependencies:time
 	"""
 	
-	def __init__(self,saturation_linear,saturation_angular,Kc_linear,Ti_linear,Kc_angular,Ti_angular):
+	def __init__(self,saturation_linear,saturation_angular,Kc_linear,Ti_linear,Kc_angular,Ti_angular,Kd_angular,max_acceleration):
 		self.saturation_l=float(saturation_linear)
 		self.saturation_a=float(saturation_angular)
 		
@@ -222,6 +220,8 @@ class Velocity_Controller_PI(object):
 		self.Kc_a=float(Kc_angular)
 		self.Ti_linear=float(Ti_linear)
 		self.Ti_angular=float(Ti_angular)
+		self.Kd_a=float(Kd_angular)
+		self.max_accel = float(max_acceleration)
 		
 		self.setX=0.0
 		self.setY=0.0
@@ -240,6 +240,12 @@ class Velocity_Controller_PI(object):
 		self.IX=0.0
 		self.IY=0.0
 		self.ITheta=0.0
+
+		#derivative contro
+		self.DT = 0
+
+		self.last_v_x = 0
+		self.last_v_y = 0
 		
 		self.last_time = time.time()
 		
@@ -269,10 +275,11 @@ class Velocity_Controller_PI(object):
 		if not self.satT:
 			self.ITheta+=self.Ki_a*self.errorTheta*delta_t
 		
+		#derivative Term
+		self.DT=self.Kd_a*((self.errorTheta-self.last_error_theta)/delta_t)
 
 		#set last error
 		self.last_error_theta=self.errorTheta
-
 
 		#Set last time
 		self.last_time=time.time()
@@ -280,7 +287,7 @@ class Velocity_Controller_PI(object):
 		#Add both contributions and multiply by SF
 		v_x=(v_xP+self.IX)*SF
 		v_y=(v_yP+self.IY)*SF
-		v_theta=v_thetaP+self.ITheta
+		v_theta=v_thetaP+self.ITheta+self.DT
 		
 		#motor saturtaion (sets max speed)
 		mag=math.sqrt((v_x**2)+(v_y**2))
@@ -310,6 +317,19 @@ class Velocity_Controller_PI(object):
 		if mag<minVel:
 			v_x*=multiplier
 			v_y*=multiplier
+
+		#max acceleration control
+		if (v_x-self.last_v_x)/delta_t > self.max_accel:
+			v_x = self.last_v_x + self.max_accel * delta_t
+		elif (v_x-self.last_v_x)/delta_t < self.max_accel:
+			v_x = self.last_v_x - self.max_accel * delta_t
+		if (v_y-self.last_v_y)/delta_t > self.max_accel:
+			v_y = self.last_v_y + self.max_accel * delta_t
+		elif (v_y-self.last_v_y)/delta_t < self.max_accel:
+			v_y = self.last_v_y - self.max_accel * delta_t
+
+		self.last_v_x = v_x
+		self.last_v_y = v_y
 
 		#return calculated velocities
 		return [v_x,v_y,v_theta]

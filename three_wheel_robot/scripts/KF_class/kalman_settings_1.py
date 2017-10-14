@@ -14,12 +14,12 @@ R = [[R1,0,0],
 	[0,R2,0],
 	[0,0,R3]]
 
-#Measurment covariance
+#Measurment covariance (camera)
 #entre mas pequeno le cree mas a la medida
 
-Q1 = 1
-Q2 = 1
-Q3 = 1
+Q1 = 5
+Q2 = 5
+Q3 = 5
 
 
 Q = [[Q1,0,0],

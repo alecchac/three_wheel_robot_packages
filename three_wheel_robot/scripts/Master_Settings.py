@@ -7,15 +7,17 @@ SF = 1
 
 
 #---------Velocity Controller------------
-max_linear_speed= .3 * SF #pixels/sec
-max_angular_speed = 2 #radians/sec
+max_linear_speed= .4 * SF #pixels/sec
+max_angular_speed = 60000000 #radians/sec
 Kc_linear = 1
 Ti_linear = 15 #Ki=Kc/Ti
-Kc_angular = .8 
-Ti_angular = 150
-distance_tolerance = .02 * SF #meters
+Kc_angular = 1 
+Ti_angular = 15000000000
+Kd_angular=0
+distance_tolerance = .05 * SF #meters
 angle_tolerance = 100 #Radians
 min_vel = .005 *SF #m/s
+max_acceleration = .6
 
 
 #---------Wheel Speed Controller----------
@@ -26,7 +28,7 @@ Kd = .15
 
 #---------Robot Definitions---------------
 #distance from center to wheel
-d = 0.09 * SF
+d = 0.07 * SF
 #radius of wheel
 r = 0.05 * SF
 
