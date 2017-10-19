@@ -11,6 +11,7 @@ from Master_Settings import max_linear_speed,max_angular_speed,Kc_linear,Ti_line
 def main():
 	#initialize node
 	rospy.init_node('Controller',anonymous=True)
+	rate = rospy.Rate(30)
 	#initialize controller
 	bobControl=Velocity_Controller_PI(max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,Kd_angular,max_acceleration)
 	#initialize listener classes
@@ -31,7 +32,7 @@ def main():
 		#--------------------- Single ----------------------------
 		#With imu angles
 		if bobInfo.x != 0:
-			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+math.pi
+			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+3.85
 			print "goal angle: "+str(follow_angle*(180/math.pi)) + "   "
 			#print "x: "+str(bobInfo.x) + "   "
 			#print "y: "+str(bobInfo.y)+ "   "
@@ -53,6 +54,7 @@ def main():
 				bobPubInfo.v_y = 0
 				bobPubInfo.omega = vels[2]
 				pub.publish(bobPubInfo)
+			rate.sleep()
 
 		''' no imu
 		if bobInfo.x != 0:
@@ -117,7 +119,7 @@ def main():
 			print 'done'
 			break
 			"""
-	time.sleep(1/30)
+	
 	rospy.spin()
 
 def getDistance(destX,destY,curX,curY):

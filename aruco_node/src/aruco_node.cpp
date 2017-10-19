@@ -12,6 +12,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <aruco_node/measurement.h>
 #include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/Pose.h>
 #include <std_msgs/Header.h>
 
 #include <math.h>
@@ -27,6 +28,7 @@ image_transport::Publisher imagepub;
 //image_transport::Publisher drawpub;
 
 ros::Publisher datapub;
+ros::Publisher datapub2;
 
 const float PI = 3.14159265358979;
 
@@ -177,11 +179,14 @@ void dataPublisher(int markno, float d, float theta, float distCenter)
 void dataPublisher(int markno, const float& x, const float& y, const float& theta, const float& D2C)
 {
     aruco_node::measurement robot_pose;
+    geometry_msgs::Pose robot_pose2;
     robot_pose.markernum = markno;
     robot_pose.x = x;
     robot_pose.y = y;
     robot_pose.theta = theta + PI;
     robot_pose.D2C = D2C/320;
+    robot_pose2.position.x = x;
+    robot_pose2.position.y = y;
 
     if (markno == 0 && x  == 0 && y  == 0)
     robot_pose.isValid=false;
@@ -189,6 +194,7 @@ void dataPublisher(int markno, const float& x, const float& y, const float& thet
     robot_pose.isValid=true;
 
     datapub.publish(robot_pose);
+    datapub2.publish(robot_pose2);
 }
 
 //void imageCallback(const  sensor_msgs::ImageConstPtr& msg)
@@ -279,5 +285,6 @@ int main(int argc, char **argv)
     imagepub = it.advertise("/camera/image_processed", 1);
     //drawpub = it.advertise("/camera/drawing", 10);
     datapub = nh.advertise<aruco_node::measurement>("/aruco/robot_pose",2);
+    datapub2 = nh.advertise<geometry_msgs::Pose>("/Pose_hat3",2);
     ros::spin();
 }

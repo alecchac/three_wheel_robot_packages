@@ -5,7 +5,7 @@ import math
 from math import pow,atan2,sqrt,cos,sin,asin,pi
 import rospy
 from std_msgs.msg import UInt8, String
-from geometry_msgs.msg import Twist, Vector3, PoseWithCovarianceStamped
+from geometry_msgs.msg import Twist, Vector3, PoseWithCovarianceStamped, Pose
 import time
 import tf
 
@@ -149,9 +149,10 @@ if __name__ == '__main__':
 	#------------------ ROS set up -----------------------------
 	# Start node
 	rospy.init_node('Three_wheel_robot_KF', anonymous=True)
-
+	rate1 = rospy.Rate(30)
 	#initialize messages
 	pubInfo = robot_info()
+	pubInfo2 = Pose()
 
 	#create object from listener classes
 	control_vels = robot_info_listener()
@@ -163,6 +164,7 @@ if __name__ == '__main__':
 	#init publisher and subscribers
 	#Publisher of this node (Topic, mesage) 
 	pub = rospy.Publisher('Pose_hat', robot_info, queue_size=1)
+	pub2 = rospy.Publisher('Pose_hat2',Pose,queue_size=1)
 	#Subscribe to Encoder
 	rospy.Subscriber('encoder_omegas',Espeeds,encoder_vels.callback)
 	#Subscribe to camera
@@ -341,9 +343,15 @@ if __name__ == '__main__':
 		pubInfo.x = pos_x
 		pubInfo.y = pos_y
 		pubInfo.theta=theta
+		pubInfo2.position.x = pos_x
+		pubInfo2.position.y = pos_y
+		pubInfo2.orientation.w = theta
 
 		#Publish position calculated from Kalman Filter and Velocities from encoder
 		pub.publish(pubInfo)
+		pub2.publish(pubInfo2)
+		rate1.sleep()
+	rospy.spin()
        
 	print("Exiting ... ")
 
