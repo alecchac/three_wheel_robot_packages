@@ -11,8 +11,7 @@ from Master_Settings import max_linear_speed,max_angular_speed,Kc_linear,Ti_line
 def main():
 	#initialize node
 	rospy.init_node('Controller',anonymous=True)
-	refresh_rate = 30.0
-	rate = rospy.Rate(5)
+	rate = rospy.Rate(30)
 	#initialize controller
 	bobControl=Velocity_Controller_PI(max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,Kd_angular,max_acceleration)
 	#initialize listener classes
@@ -28,20 +27,14 @@ def main():
 	bobPubInfo=robot_info()
 	pi_pose = measurment_listener()
 	rospy.Subscriber('/aruco/robot_pose',measurement,pi_pose.callback)
-	#init moving average
-	SMA = moving_average(refresh_rate)
 
 	while (not rospy.is_shutdown()) :
 		#--------------------- Single ----------------------------
 		#With imu angles
-		if bobInfo.theta !=0:
-			SMA.updateTheta(bobInfo.theta)
-			SMA.updateAverage()
-		if bobInfo.x != 0 and SMA.count>=SMA.width:
-			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+3.85
-			print "Current angle: "+str(SMA.getTheta()*(180/math.pi)) + "   "
-			print "GOAL angle: "+str(follow_angle*(180/math.pi)) + "   "
-			print "ERROR:"+str((SMA.getTheta()-follow_angle)*(180/math.pi)) + "   "
+		if bobInfo.x != 0:
+			imu_angle_box_in_front = 3.85
+			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+imu_angle_box_in_front
+			print "goal angle: "+str(follow_angle*(180/math.pi)) + "   "
 			#print "x: "+str(bobInfo.x) + "   "
 			#print "y: "+str(bobInfo.y)+ "   "
 			#updates the current goal pose and the current pose of the robot for the controller class to use
@@ -129,44 +122,6 @@ def main():
 			"""
 	
 	rospy.spin()
-
-class moving_average(object):
-	'''
-	calculates the simple moving average with a width (counts) 
-	'''
-	def __init__(self,width):
-		self.count = 0
-		self.width = float(width)
-		self.theta_avg = 0.0
-		self.theta_current = 0.0
-		self.record = []
-	
-	def getTheta(self):
-		if self.count>=self.width:
-			return self.theta_current
-		else:
-			return 0.0
-
-	def updateTheta(self,upTheta):
-		self.theta = upTheta
-
-	def updateAverage(self):
-		#builds the array to be used
-		if(self.count<self.width):
-			self.record.append(self.theta)
-			self.count += 1 
-		elif self.count >= self.width:
-			for i in range(0,len(self.record)-1):
-				self.record[i] = self.record[i+1]
-			self.record[len(self.record)-1] = self.theta
-			sum = 0
-			for k in self.record:
-				sum += k
-			self.theta_current = sum / self.width
-			self.count +=1
-
-
-
 
 def getDistance(destX,destY,curX,curY):
 	return math.sqrt((destX-curX)**2+(destY-curY)**2)

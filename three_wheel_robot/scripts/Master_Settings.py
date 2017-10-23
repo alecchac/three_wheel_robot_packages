@@ -7,11 +7,11 @@ SF = 1
 
 
 #---------Velocity Controller------------
-max_linear_speed= .1 * SF #pixels/sec
-max_angular_speed = .5
-Kc_linear = .1
+max_linear_speed= 0.2 * SF #pixels/sec
+max_angular_speed = 0.5
+Kc_linear = 1.0
 Ti_linear = 150000000000.0 #Ki=Kc/Ti
-Kc_angular = 1
+Kc_angular = 1.5
 Ti_angular = 150000000000.0
 Kd_angular= 0
 distance_tolerance = .05 * SF #meters

@@ -17,8 +17,8 @@ R = [[R1,0,0],
 #Measurment covariance (camera)
 #entre mas pequeno le cree mas a la medida
 
-Q1 = 200000
-Q2 = 200000
+Q1 = 200000/8.0
+Q2 = 200000/8.0
 Q3 =100
 
 
