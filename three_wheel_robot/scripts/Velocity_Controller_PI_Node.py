@@ -12,7 +12,7 @@ def main():
 	#initialize node
 	rospy.init_node('Controller',anonymous=True)
 	refresh_rate = 30.0
-	rate = rospy.Rate(refresh_rate)
+	rate = rospy.Rate(5)
 	#initialize controller
 	bobControl=Velocity_Controller_PI(max_linear_speed,max_angular_speed,Kc_linear,Ti_linear,Kc_angular,Ti_angular,Kd_angular,max_acceleration)
 	#initialize listener classes
@@ -39,11 +39,13 @@ def main():
 			SMA.updateAverage()
 		if bobInfo.x != 0 and SMA.count>=SMA.width:
 			follow_angle = math.atan2(bobInfo.y,bobInfo.x)+3.85
-			print "angle: "+str(SMA.getTheta()*(180/math.pi)) + "   "
+			print "Current angle: "+str(SMA.getTheta()*(180/math.pi)) + "   "
+			print "GOAL angle: "+str(follow_angle*(180/math.pi)) + "   "
+			print "ERROR:"+str((SMA.getTheta()-follow_angle)*(180/math.pi)) + "   "
 			#print "x: "+str(bobInfo.x) + "   "
 			#print "y: "+str(bobInfo.y)+ "   "
 			#updates the current goal pose and the current pose of the robot for the controller class to use
-			bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,SMA.getTheta())
+			bobControl.update_current_positions(bobWaySingle.x,bobWaySingle.y,follow_angle,bobInfo.x,bobInfo.y,bobInfo.theta)
 			#calculates the velocities that the robot needs to go (need to specify minimum velocity in the function)
 			vels=bobControl.update_velocities(min_vel)
 			if getDistance(bobWaySingle.x,bobWaySingle.y,bobInfo.x,bobInfo.y)>distance_tolerance:

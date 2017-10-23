@@ -8,8 +8,8 @@ SF = 1
 
 #---------Velocity Controller------------
 max_linear_speed= .1 * SF #pixels/sec
-Kc_linear = 1
-max_angular_speed = .0001
+max_angular_speed = .5
+Kc_linear = .1
 Ti_linear = 150000000000.0 #Ki=Kc/Ti
 Kc_angular = 1
 Ti_angular = 150000000000.0
