@@ -1,0 +1,20 @@
+<launch>
+<node name="Controller" pkg="three_wheel_robot" type="Velocity_Controller_PI_Node.py" output="screen"/>
+<node name="Wheel_Speed_Controller" pkg="three_wheel_robot" type="Wheel_Speed_Controller_Node.py" />
+<node name="KF" pkg="three_wheel_robot" type="three_wheel_KF.py" output="screen"/>
+<node name="encoder_count" pkg="three_wheel_robot" type="encoder_count.py" />
+<node name="pi_pwm" pkg="three_wheel_robot" type="pi_pwm.py" />
+<node type="raspicam_node" pkg="raspicam_node" name="raspicam_node" output="screen">
+
+    <param name="camera_info_url" value="package://raspicam_node/camera_info/camerav2_640x480.yaml"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+    <param name="framerate" value="10"/>
+
+    <param name="camera_frame_id" value="raspicam"/>
+
+  </node>
+<node name="imu_node" pkg="imu_node" type="imu_node" output="screen"/>
+<node pkg="aruco_node" type="aruco_node" name="aruco_node">
+</node>
+</launch>

@@ -20,7 +20,7 @@ def main():
 	bobInfo=robot_info_listener()
 	#init subscribers
 	#rospy.Subscriber('goal_pos',waypoints,bobWay.callback)
-	rospy.Subscriber('goal_pose',PoseStamped,bobWaySingle.callback)
+	rospy.Subscriber('michelangelo/move_base_simple/goal',PoseStamped,bobWaySingle.callback)
 	rospy.Subscriber('Pose_hat',robot_info,bobInfo.callback)
 	#init publishers and publish message
 	pub=rospy.Publisher('cmd_vel',robot_info,queue_size=1)
